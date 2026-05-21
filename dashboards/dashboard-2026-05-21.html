@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Retenção · Queima Diária</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root{--bg:#F5F2ED;--surface:#FFFFFF;--surface2:#EDEAE4;--text:#1A1714;--text-muted:#6B6460;--text-hint:#9C9490;--accent:#C84B2F;--accent-light:#FAE8E3;--green:#2D6A4F;--green-light:#D8F3DC;--amber:#885E00;--amber-light:#FFF3CD;--blue:#1A4E8C;--blue-light:#DBE9FA;--purple:#9B59B6;--purple-light:#F0E6F6;--teal:#1D9E75;--teal-light:#D1F5EB;--border:rgba(26,23,20,0.1);--radius:12px;--shadow:0 1px 3px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.05);}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  header{background:var(--text);color:#F5F2ED;padding:28px 48px 0;}
+  .header-top{display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:22px;}
+  .header-left h1{font-family:'DM Serif Display',serif;font-size:32px;font-weight:400;letter-spacing:-0.5px;line-height:1;}
+  .header-left .subtitle{font-size:13px;color:rgba(245,242,237,0.5);margin-top:6px;font-weight:300;letter-spacing:0.04em;}
+  .header-right .periodo{font-size:12px;color:rgba(245,242,237,0.4);font-weight:300;text-align:right;}
+  .header-right .badge-data{font-size:10px;font-weight:600;letter-spacing:0.08em;color:rgba(245,242,237,0.3);text-transform:uppercase;text-align:right;margin-top:4px;}
+  .tabs{display:flex;gap:4px;padding-top:4px;}
+  .tab-btn{background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:rgba(245,242,237,0.45);padding:10px 20px;border-radius:8px 8px 0 0;transition:all 0.2s;letter-spacing:0.01em;}
+  .tab-btn:hover{color:rgba(245,242,237,0.75);background:rgba(255,255,255,0.05);}
+  .tab-btn.active{color:var(--text);background:var(--bg);font-weight:600;}
+  main{max-width:1140px;margin:0 auto;padding:36px 32px 60px;}
+  .tab-panel{display:none;} .tab-panel.active{display:block;}
+  .section-label{font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-hint);margin-bottom:14px;}
+  .kpi-row{display:grid;gap:14px;margin-bottom:36px;}
+  .kpi-4{grid-template-columns:repeat(4,1fr);} .kpi-5{grid-template-columns:repeat(5,1fr);} .kpi-6{grid-template-columns:repeat(6,1fr);}
+  .kpi-card{background:var(--surface);border-radius:var(--radius);padding:20px 22px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden;animation:fadeUp 0.5s ease both;}
+  .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0;background:var(--border);}
+  .kpi-card.green::before{background:var(--green)}.kpi-card.accent::before{background:var(--accent)}.kpi-card.amber::before{background:var(--amber)}.kpi-card.blue::before{background:var(--blue)}.kpi-card.purple::before{background:var(--purple)}.kpi-card.teal::before{background:var(--teal)}
+  .kpi-label{font-size:11px;color:var(--text-hint);font-weight:500;letter-spacing:0.02em;margin-bottom:8px;}
+  .kpi-value{font-family:'DM Serif Display',serif;font-size:42px;line-height:1;color:var(--text);}
+  .kpi-card.green .kpi-value{color:var(--green)}.kpi-card.accent .kpi-value{color:var(--accent)}.kpi-card.amber .kpi-value{color:var(--amber)}.kpi-card.blue .kpi-value{color:var(--blue)}.kpi-card.purple .kpi-value{color:var(--purple)}.kpi-card.teal .kpi-value{color:var(--teal)}
+  .kpi-sub{font-size:11px;color:var(--text-hint);margin-top:5px;font-weight:300;}
+  .kpi-tag{font-size:9px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:2px 7px;border-radius:20px;margin-top:6px;display:inline-block;}
+  .kpi-tag.g{background:var(--green-light);color:var(--green);}.kpi-tag.r{background:var(--accent-light);color:var(--accent);}.kpi-tag.a{background:var(--amber-light);color:var(--amber);}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:36px;}
+  .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:36px;}
+  .card{background:var(--surface);border-radius:var(--radius);padding:22px 24px;box-shadow:var(--shadow);animation:fadeUp 0.5s ease both;}
+  .card-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+  .card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+  .chart-wrap{position:relative;height:220px;} .chart-wrap-sm{position:relative;height:180px;}
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .bar-row:last-child{margin-bottom:0;}
+  .bar-label{font-size:12px;color:var(--text-muted);width:210px;flex-shrink:0;line-height:1.35;}
+  .bar-track{flex:1;height:7px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:4px;}
+  .bar-count{font-size:12px;font-weight:600;color:var(--text-muted);width:28px;text-align:right;}
+  .table-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:36px;overflow:hidden;animation:fadeUp 0.5s ease 0.3s both;}
+  .table-header{padding:18px 24px 14px;border-bottom:1px solid var(--border);}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th{text-align:left;padding:9px 14px;font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-hint);background:var(--bg);border-bottom:1px solid var(--border);}
+  td{padding:9px 14px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;} tr:hover td{background:rgba(245,242,237,0.6);}
+  .badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap;}
+  .bg{background:var(--green-light);color:var(--green);}.br{background:var(--accent-light);color:var(--accent);}.ba{background:var(--amber-light);color:var(--amber);}.bb{background:var(--surface2);color:var(--text-hint);}.bt{background:var(--teal-light);color:var(--teal);}.bpurp{background:var(--purple-light);color:var(--purple);}
+  .motivo-text{color:var(--text-muted);font-size:11.5px;}
+  .compare-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:36px;}
+  .compare-kpi{background:var(--surface);border-radius:var(--radius);padding:20px 22px 18px;box-shadow:var(--shadow);animation:fadeUp 0.4s ease both;}
+  .compare-kpi-label{font-size:11px;color:var(--text-hint);font-weight:500;margin-bottom:14px;letter-spacing:0.02em;}
+  .compare-kpi-vals{display:flex;gap:12px;align-items:center;}
+  .compare-val{text-align:center;flex:1;}
+  .compare-val .name{font-size:10px;color:var(--text-hint);margin-bottom:3px;}
+  .compare-val .num{font-family:'DM Serif Display',serif;font-size:30px;line-height:1;}
+  .compare-val .pct{font-size:11px;color:var(--text-hint);margin-top:3px;}
+  .compare-divider{width:1px;height:50px;background:var(--border);flex-shrink:0;}
+  .wtag{font-size:9px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:2px 7px;border-radius:20px;margin-top:5px;display:inline-block;}
+  .wtag.g{background:var(--green-light);color:var(--green);}.wtag.n{background:var(--surface2);color:var(--text-hint);}
+  .insight-banner{border-radius:var(--radius);padding:18px 22px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px;}
+  .insight-banner.green{background:var(--green-light);border:1px solid rgba(45,106,79,0.2);}
+  .insight-banner.amber{background:var(--amber-light);border:1px solid rgba(136,94,0,0.2);}
+  .insight-banner.red{background:var(--accent-light);border:1px solid rgba(200,75,47,0.2);}
+  .insight-banner.blue{background:var(--blue-light);border:1px solid rgba(26,78,140,0.2);}
+  .insight-icon{font-size:20px;flex-shrink:0;margin-top:2px;}
+  .insight-body{font-size:13px;line-height:1.55;}
+  .insight-body strong{font-weight:600;display:block;margin-bottom:3px;}
+  .insight-body.green-text{color:var(--green);}.insight-body.amber-text{color:var(--amber);}.insight-body.red-text{color:var(--accent);}.insight-body.blue-text{color:var(--blue);}
+  footer{background:var(--text);color:rgba(245,242,237,0.4);text-align:center;padding:18px;font-size:11px;font-weight:300;letter-spacing:0.04em;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  @media(max-width:768px){header{padding:20px 20px 0;}.header-top{flex-direction:column;align-items:flex-start;gap:12px;padding-bottom:16px;}main{padding:24px 16px 40px;}.kpi-4,.kpi-5,.kpi-6{grid-template-columns:1fr 1fr;}.two-col,.charts-row,.compare-kpi-row{grid-template-columns:1fr;}.tabs{gap:2px;}.tab-btn{font-size:11px;padding:8px 10px;}.bar-label{width:140px;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="header-left">
+      <h1>Dashboard de Retenção</h1>
+      <div class="subtitle">Queima Diária · Análise de conversas de cancelamento · 21/05/2026</div>
+    </div>
+    <div class="header-right">
+      <div class="periodo">20/05 a 20/05 · 1 conversas</div>
+      <div class="badge-data">Fonte: campos classificados Hi Platform</div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('compare',this)">Comparativo</button>
+    <button class="tab-btn" onclick="switchTab('Jessica_Nunes_Salomo',this)">Jessica Nunes</button>
+  </div>
+</header>
+
+<main>
+
+<!-- ══════════ COMPARATIVO ══════════ -->
+<div class="tab-panel active" id="panel-compare">
+
+  <div class="section-label">Visão consolidada · 20/05 a 20/05 · 1 atendentes</div>
+  <div class="kpi-row kpi-6">
+    <div class="kpi-card"><div class="kpi-label">Total de conversas</div><div class="kpi-value">1</div><div class="kpi-sub">Jessica 1</div></div>
+    <div class="kpi-card green"><div class="kpi-label">Revertidas (retidas)</div><div class="kpi-value">0</div><div class="kpi-sub">0.0% de retenção geral</div><span class="kpi-tag g">Jessica 0</span></div>
+    <div class="kpi-card accent"><div class="kpi-label">Não revertidas</div><div class="kpi-value">0</div><div class="kpi-sub">0.0% — cancelamentos efetivos</div><span class="kpi-tag r">Jessica 0</span></div>
+    <div class="kpi-card amber"><div class="kpi-label">Direcionados</div><div class="kpi-value">0</div><div class="kpi-sub">0.0% — sem tentativa ativa</div></div>
+    <div class="kpi-card blue"><div class="kpi-label">Não se Aplica</div><div class="kpi-value">0</div><div class="kpi-sub">Apple / Google Play / terceiros</div></div>
+    <div class="kpi-card teal"><div class="kpi-label">Inatividade</div><div class="kpi-value">1</div><div class="kpi-sub">Sem ação de retenção possível</div></div>
+  </div>
+
+  <div class="section-label">Leitura executiva</div>
+  <div class="insight-banner green">
+    <div class="insight-icon">📊</div>
+    <div class="insight-body green-text">
+      <strong>Preencha aqui o insight 1</strong>
+      Adicione sua análise executiva principal para o período.
+    </div>
+  </div>
+  <div class="insight-banner amber">
+    <div class="insight-icon">🔑</div>
+    <div class="insight-body amber-text">
+      <strong>Preencha aqui o insight 2</strong>
+      Adicione observações sobre padrões de volume ou condição.
+    </div>
+  </div>
+  <div class="insight-banner red">
+    <div class="insight-icon">⚠️</div>
+    <div class="insight-body red-text">
+      <strong>Preencha aqui o insight 3</strong>
+      Adicione análise de estratégias que converteram ou falharam.
+    </div>
+  </div>
+  <div class="insight-banner blue">
+    <div class="insight-icon">💡</div>
+    <div class="insight-body blue-text">
+      <strong>Preencha aqui o insight 4</strong>
+      Adicione comparativo entre atendentes ou recomendação de ação.
+    </div>
+  </div>
+
+  <div class="section-label">Head-to-head · por atendente</div>
+  <div class="compare-kpi-row">
+    
+    <div class="compare-kpi">
+      <div class="compare-kpi-label">Total de conversas</div>
+      <div class="compare-kpi-vals">
+        
+        
+        <div class="compare-val">
+          <div class="name">Jessica</div>
+          <div class="num" style="color:var(--text)">1</div>
+          <div class="pct">100.0% do total</div>
+        </div>
+      </div>
+    </div>
+    <div class="compare-kpi">
+      <div class="compare-kpi-label">Taxa de retenção</div>
+      <div class="compare-kpi-vals">
+        
+          
+          <div class="compare-val">
+            <div class="name">Jessica</div>
+            <div class="num" style="color:var(--amber)">0.0%</div>
+            <div class="pct">0 de 1</div>
+          </div>
+      </div>
+    </div>
+    <div class="compare-kpi">
+      <div class="compare-kpi-label">Não Revertidos</div>
+      <div class="compare-kpi-vals">
+        
+        
+        <div class="compare-val">
+          <div class="name">Jessica</div>
+          <div class="num" style="color:var(--accent)">0</div>
+          <div class="pct">0.0% do volume</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Comparativo visual</div>
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-title">Status por atendente</div>
+      <div class="chart-wrap"><canvas id="chartCompare"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Condição por atendente</div>
+      <div class="chart-wrap"><canvas id="chartCondicao"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-label">Estratégias que converteram · 0 reversões</div>
+  <div class="card" style="margin-bottom:36px;">
+    <div class="card-title">Detalhamento das conversas revertidas</div>
+    <p style="color:var(--text-hint);font-size:13px;padding:12px 0;">Nenhuma reversão no período.</p>
+  </div>
+
+</div>
+
+
+<div class="tab-panel" id="panel-Jessica_Nunes_Salomo">
+  <div class="section-label">Visão geral · Jessica Nunes Salomão</div>
+  <div class="kpi-row kpi-5">
+    <div class="kpi-card"><div class="kpi-label">Total de conversas</div><div class="kpi-value">1</div></div>
+    <div class="kpi-card green"><div class="kpi-label">Revertidas</div><div class="kpi-value">0</div><div class="kpi-sub">0.0% de retenção</div></div>
+    <div class="kpi-card accent"><div class="kpi-label">Não revertidas</div><div class="kpi-value">0</div><div class="kpi-sub">0.0% do volume</div></div>
+    <div class="kpi-card amber"><div class="kpi-label">Direcionados</div><div class="kpi-value">0</div></div>
+    <div class="kpi-card blue"><div class="kpi-label">Não se Aplica / Outros</div><div class="kpi-value">1</div></div>
+  </div>
+
+  <div class="section-label">Distribuição e motivos</div>
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-title">Status de reversão</div>
+      <div class="chart-wrap"><canvas id="chartStatus_Jessica_Nunes_Salomo"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Condição de reversão</div>
+      <div class="chart-wrap-sm"><canvas id="chartCond_Jessica_Nunes_Salomo"></canvas></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Motivos de contato · Jessica</div>
+      
+      <div class="bar-row">
+        <div class="bar-label" title="Inatividade">Inatividade</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#885E00;"></div></div>
+        <div class="bar-count">1</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Estratégias utilizadas · Jessica</div>
+      
+      <div class="bar-row">
+        <div class="bar-label" title="Inatividade">Inatividade</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#885E00;"></div></div>
+        <div class="bar-count">1</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Todas as conversas · Jessica Nunes Salomão</div>
+  <div class="table-card">
+    <div class="table-header"><div class="card-title" style="margin-bottom:0">1 conversas</div></div>
+    <table>
+      <thead><tr><th>Cliente</th><th>Data</th><th>Condição</th><th>Motivo</th><th>Estratégia</th><th>Full/Fallback</th><th>Status</th></tr></thead>
+      <tbody><tr>
+      <td>YAMAR por Yara Martins</td>
+      <td>20/05</td>
+      <td class="motivo-text">Inatividade</td>
+      <td class="motivo-text">Inatividade</td>
+      <td class="motivo-text">Inatividade</td>
+      <td class="motivo-text">Inatividade</td>
+      <td><span class="badge bb">Inatividade</span></td>
+    </tr></tbody>
+    </table>
+  </div>
+
+  <script>
+  new Chart(document.getElementById('chartStatus_Jessica_Nunes_Salomo'),{
+    type:'doughnut',
+    data:{labels:["Inatividade"],datasets:[{data:[1],backgroundColor:["#C84B2F"],borderWidth:3,borderColor:'#fff',hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+ctx.raw}}}}
+  });
+  new Chart(document.getElementById('chartCond_Jessica_Nunes_Salomo'),{
+    type:'bar',
+    data:{labels:["Inatividade"],datasets:[{data:[1],backgroundColor:['#885E00','#C84B2F','#EDEAE4','#1A4E8C','#2D6A4F','#1D9E75'],borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#9C9490'}},y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:11},color:'#9C9490'}}},plugins:{legend:{display:false}}}
+  });
+  </script>
+</div>
+
+</main>
+
+<footer>
+  Queima Diária · Dashboard de Retenção · 21/05/2026 · 1 conversas · Jessica Nunes Salomão (1)
+</footer>
+
+<script>
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+const accent='#C84B2F',green='#2D6A4F',amber='#885E00',blue='#1A4E8C',
+      teal='#1D9E75',purple='#9B59B6',muted='#9C9490',gray='#EDEAE4';
+
+new Chart(document.getElementById('chartCompare'),{
+  type:'bar',
+  data:{
+    labels:["Jessica Nunes Salomão"],
+    datasets:[
+      {label:'Revertidas',data:[0],backgroundColor:green},
+      {label:'Não Revertidas',data:[0],backgroundColor:accent},
+      {label:'Direcionados',data:[0],backgroundColor:amber},
+      {label:'Não se Aplica',data:[0],backgroundColor:purple},
+      {label:'Inatividade',data:[1],backgroundColor:gray}
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:12,weight:'600'},color:'#1A1714'}},
+            y:{stacked:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:11},color:muted}}},
+    plugins:{legend:{position:'bottom',labels:{font:{size:11},color:muted,boxWidth:10}}}}
+});
+
+// Condição por atendente (agrupado)
+const condicoesTodas = [...new Set(["Inatividade"])];
+new Chart(document.getElementById('chartCondicao'),{
+  type:'bar',
+  data:{
+    labels:condicoesTodas,
+    datasets:[{"label":"Jessica","data":[],"backgroundColor":"#2D6A4F99"}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    scales:{x:{grid:{display:false},ticks:{font:{size:10},color:muted}},
+            y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:11},color:muted}}},
+    plugins:{legend:{position:'bottom',labels:{font:{size:11},color:muted,boxWidth:10}}}}
+});
+
+// Preencher dados condição por operador dinamicamente
+const dadosBrutos = [{"nome":"Jessica Nunes Salomão","condicao":"Inatividade"}];
+const chartCond = Chart.getChart('chartCondicao');
+condicoesTodas.forEach((cond, ci) => {
+  ["Jessica Nunes Salomão"].forEach((op, oi) => {
+    const count = dadosBrutos.filter(d => d.nome === op && d.condicao === cond).length;
+    chartCond.data.datasets[oi].data[ci] = count;
+  });
+});
+chartCond.update();
+</script>
+</body>
+</html>
