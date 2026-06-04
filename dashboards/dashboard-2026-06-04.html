@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Retenção · Queima Diária</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root{--bg:#F5F2ED;--surface:#FFFFFF;--surface2:#EDEAE4;--text:#1A1714;--text-muted:#6B6460;--text-hint:#9C9490;--accent:#C84B2F;--accent-light:#FAE8E3;--green:#2D6A4F;--green-light:#D8F3DC;--amber:#885E00;--amber-light:#FFF3CD;--blue:#1A4E8C;--blue-light:#DBE9FA;--purple:#9B59B6;--purple-light:#F0E6F6;--teal:#1D9E75;--teal-light:#D1F5EB;--border:rgba(26,23,20,0.1);--radius:12px;--shadow:0 1px 3px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.05);}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  header{background:var(--text);color:#F5F2ED;padding:28px 48px 0;}
+  .header-top{display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:22px;}
+  .header-left h1{font-family:'DM Serif Display',serif;font-size:32px;font-weight:400;letter-spacing:-0.5px;line-height:1;}
+  .header-left .subtitle{font-size:13px;color:rgba(245,242,237,0.5);margin-top:6px;font-weight:300;letter-spacing:0.04em;}
+  .header-right .periodo{font-size:12px;color:rgba(245,242,237,0.4);font-weight:300;text-align:right;}
+  .header-right .badge-data{font-size:10px;font-weight:600;letter-spacing:0.08em;color:rgba(245,242,237,0.3);text-transform:uppercase;text-align:right;margin-top:4px;}
+  .tabs{display:flex;gap:4px;padding-top:4px;}
+  .tab-btn{background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:rgba(245,242,237,0.45);padding:10px 20px;border-radius:8px 8px 0 0;transition:all 0.2s;letter-spacing:0.01em;}
+  .tab-btn:hover{color:rgba(245,242,237,0.75);background:rgba(255,255,255,0.05);}
+  .tab-btn.active{color:var(--text);background:var(--bg);font-weight:600;}
+  main{max-width:1140px;margin:0 auto;padding:36px 32px 60px;}
+  .tab-panel{display:none;} .tab-panel.active{display:block;}
+  .section-label{font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-hint);margin-bottom:14px;}
+  .kpi-row{display:grid;gap:14px;margin-bottom:36px;}
+  .kpi-4{grid-template-columns:repeat(4,1fr);} .kpi-5{grid-template-columns:repeat(5,1fr);} .kpi-6{grid-template-columns:repeat(6,1fr);}
+  .kpi-card{background:var(--surface);border-radius:var(--radius);padding:20px 22px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden;animation:fadeUp 0.5s ease both;}
+  .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0;background:var(--border);}
+  .kpi-card.green::before{background:var(--green)}.kpi-card.accent::before{background:var(--accent)}.kpi-card.amber::before{background:var(--amber)}.kpi-card.blue::before{background:var(--blue)}.kpi-card.purple::before{background:var(--purple)}.kpi-card.teal::before{background:var(--teal)}
+  .kpi-label{font-size:11px;color:var(--text-hint);font-weight:500;letter-spacing:0.02em;margin-bottom:8px;}
+  .kpi-value{font-family:'DM Serif Display',serif;font-size:42px;line-height:1;color:var(--text);}
+  .kpi-card.green .kpi-value{color:var(--green)}.kpi-card.accent .kpi-value{color:var(--accent)}.kpi-card.amber .kpi-value{color:var(--amber)}.kpi-card.blue .kpi-value{color:var(--blue)}.kpi-card.purple .kpi-value{color:var(--purple)}.kpi-card.teal .kpi-value{color:var(--teal)}
+  .kpi-sub{font-size:11px;color:var(--text-hint);margin-top:5px;font-weight:300;}
+  .kpi-tag{font-size:9px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:2px 7px;border-radius:20px;margin-top:6px;display:inline-block;}
+  .kpi-tag.g{background:var(--green-light);color:var(--green);}.kpi-tag.r{background:var(--accent-light);color:var(--accent);}.kpi-tag.a{background:var(--amber-light);color:var(--amber);}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:36px;}
+  .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:36px;}
+  .card{background:var(--surface);border-radius:var(--radius);padding:22px 24px;box-shadow:var(--shadow);animation:fadeUp 0.5s ease both;}
+  .card-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+  .card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+  .chart-wrap{position:relative;height:220px;} .chart-wrap-sm{position:relative;height:180px;}
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .bar-row:last-child{margin-bottom:0;}
+  .bar-label{font-size:12px;color:var(--text-muted);width:210px;flex-shrink:0;line-height:1.35;}
+  .bar-track{flex:1;height:7px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:4px;}
+  .bar-count{font-size:12px;font-weight:600;color:var(--text-muted);width:28px;text-align:right;}
+  .table-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:36px;overflow:hidden;animation:fadeUp 0.5s ease 0.3s both;}
+  .table-header{padding:18px 24px 14px;border-bottom:1px solid var(--border);}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th{text-align:left;padding:9px 14px;font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-hint);background:var(--bg);border-bottom:1px solid var(--border);}
+  td{padding:9px 14px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;} tr:hover td{background:rgba(245,242,237,0.6);}
+  .badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap;}
+  .bg{background:var(--green-light);color:var(--green);}.br{background:var(--accent-light);color:var(--accent);}.ba{background:var(--amber-light);color:var(--amber);}.bb{background:var(--surface2);color:var(--text-hint);}.bt{background:var(--teal-light);color:var(--teal);}.bpurp{background:var(--purple-light);color:var(--purple);}
+  .motivo-text{color:var(--text-muted);font-size:11.5px;}
+  .compare-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:36px;}
+  .compare-kpi{background:var(--surface);border-radius:var(--radius);padding:20px 22px 18px;box-shadow:var(--shadow);animation:fadeUp 0.4s ease both;}
+  .compare-kpi-label{font-size:11px;color:var(--text-hint);font-weight:500;margin-bottom:14px;letter-spacing:0.02em;}
+  .compare-kpi-vals{display:flex;gap:12px;align-items:center;}
+  .compare-val{text-align:center;flex:1;}
+  .compare-val .name{font-size:10px;color:var(--text-hint);margin-bottom:3px;}
+  .compare-val .num{font-family:'DM Serif Display',serif;font-size:30px;line-height:1;}
+  .compare-val .pct{font-size:11px;color:var(--text-hint);margin-top:3px;}
+  .compare-divider{width:1px;height:50px;background:var(--border);flex-shrink:0;}
+  .wtag{font-size:9px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:2px 7px;border-radius:20px;margin-top:5px;display:inline-block;}
+  .wtag.g{background:var(--green-light);color:var(--green);}.wtag.n{background:var(--surface2);color:var(--text-hint);}
+  .insight-banner{border-radius:var(--radius);padding:18px 22px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px;}
+  .insight-banner.green{background:var(--green-light);border:1px solid rgba(45,106,79,0.2);}
+  .insight-banner.amber{background:var(--amber-light);border:1px solid rgba(136,94,0,0.2);}
+  .insight-banner.red{background:var(--accent-light);border:1px solid rgba(200,75,47,0.2);}
+  .insight-banner.blue{background:var(--blue-light);border:1px solid rgba(26,78,140,0.2);}
+  .insight-icon{font-size:20px;flex-shrink:0;margin-top:2px;}
+  .insight-body{font-size:13px;line-height:1.55;}
+  .insight-body strong{font-weight:600;display:block;margin-bottom:3px;}
+  .insight-body.green-text{color:var(--green);}.insight-body.amber-text{color:var(--amber);}.insight-body.red-text{color:var(--accent);}.insight-body.blue-text{color:var(--blue);}
+  footer{background:var(--text);color:rgba(245,242,237,0.4);text-align:center;padding:18px;font-size:11px;font-weight:300;letter-spacing:0.04em;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  @media(max-width:768px){header{padding:20px 20px 0;}.header-top{flex-direction:column;align-items:flex-start;gap:12px;padding-bottom:16px;}main{padding:24px 16px 40px;}.kpi-4,.kpi-5,.kpi-6{grid-template-columns:1fr 1fr;}.two-col,.charts-row,.compare-kpi-row{grid-template-columns:1fr;}.tabs{gap:2px;}.tab-btn{font-size:11px;padding:8px 10px;}.bar-label{width:140px;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="header-left">
+      <h1>Dashboard de Retenção</h1>
+      <div class="subtitle">Queima Diária · Análise de conversas de cancelamento · 04/06/2026</div>
+    </div>
+    <div class="header-right">
+      <div class="periodo">06/03 a 06/03 · 13 conversas</div>
+      <div class="badge-data">Fonte: campos classificados Hi Platform</div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('compare',this)">Comparativo</button>
+    <button class="tab-btn" onclick="switchTab('Jessica_Nunes_Salomo',this)">Jessica Nunes</button>
+    <button class="tab-btn" onclick="switchTab('Samla_Souza',this)">Samla Souza</button>
+  </div>
+</header>
+
+<main>
+
+<!-- ══════════ COMPARATIVO ══════════ -->
+<div class="tab-panel active" id="panel-compare">
+
+  <div class="section-label">Visão consolidada · 06/03 a 06/03 · 2 atendentes</div>
+  <div class="kpi-row kpi-6">
+    <div class="kpi-card">
+      <div class="kpi-label">Total de conversas</div>
+      <div class="kpi-value">13</div>
+      <div class="kpi-sub">Jessica 5 · Samla 8</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Revertidas (retidas)</div>
+      <div class="kpi-value">5</div>
+      <div class="kpi-sub">38.5% de retenção geral</div>
+      <span class="kpi-tag g">Jessica 2 · Samla 3</span>
+    </div>
+    <div class="kpi-card accent">
+      <div class="kpi-label">Não revertidas</div>
+      <div class="kpi-value">5</div>
+      <div class="kpi-sub">38.5% — cancelamentos efetivos</div>
+      <span class="kpi-tag r">Jessica 1 · Samla 4</span>
+    </div>
+    <div class="kpi-card teal">
+      <div class="kpi-label">Addons cancelados</div>
+      <div class="kpi-value">0</div>
+      <div class="kpi-sub">Plano principal mantido</div>
+      <span class="kpi-tag a">Jessica 0 · Samla 0</span>
+    </div>
+    <div class="kpi-card amber">
+      <div class="kpi-label">Direcionados (Zendesk + Outro Dept.)</div>
+      <div class="kpi-value">1</div>
+      <div class="kpi-sub">7.7% — sem tentativa de retenção</div>
+      <span class="kpi-tag a">Jessica 1 · Samla 0</span>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">Outros (Apple/Chargeback/Sem ass.)</div>
+      <div class="kpi-value">2</div>
+      <div class="kpi-sub">Sem ação de retenção possível</div>
+    </div>
+  </div>
+
+  <div class="section-label">Head-to-head · por atendente</div>
+  <div class="compare-kpi-row">
+    
+    <div class="compare-kpi">
+      <div class="compare-kpi-label">Total de conversas</div>
+      <div class="compare-kpi-vals">
+        
+        
+        <div class="compare-val">
+          <div class="name">Jessica</div>
+          <div class="num" style="color:var(--text)">5</div>
+          <div class="pct">38.5% do total</div>
+        </div>
+        <div class="compare-divider"></div>
+        <div class="compare-val">
+          <div class="name">Samla</div>
+          <div class="num" style="color:var(--text)">8</div>
+          <div class="pct">61.5% do total</div>
+        </div>
+      </div>
+    </div>
+    <div class="compare-kpi">
+      <div class="compare-kpi-label">Taxa de retenção</div>
+      <div class="compare-kpi-vals">
+        
+          
+          <div class="compare-val">
+            <div class="name">Jessica</div>
+            <div class="num" style="color:var(--amber)">40.0%</div>
+            <div class="pct">2 de 5</div>
+          </div>
+          <div class="compare-divider"></div>
+          <div class="compare-val">
+            <div class="name">Samla</div>
+            <div class="num" style="color:var(--amber)">37.5%</div>
+            <div class="pct">3 de 8</div>
+          </div>
+      </div>
+    </div>
+    <div class="compare-kpi">
+      <div class="compare-kpi-label">Não Revertidos</div>
+      <div class="compare-kpi-vals">
+        
+        
+        <div class="compare-val">
+          <div class="name">Jessica</div>
+          <div class="num" style="color:var(--accent)">1</div>
+          <div class="pct">20.0% do volume</div>
+        </div>
+        <div class="compare-divider"></div>
+        <div class="compare-val">
+          <div class="name">Samla</div>
+          <div class="num" style="color:var(--accent)">4</div>
+          <div class="pct">50.0% do volume</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Comparativo visual</div>
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-title">Status por atendente</div>
+      <div class="chart-wrap"><canvas id="chartCompare"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Condição por atendente</div>
+      <div class="chart-wrap"><canvas id="chartCondicao"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-label">Estratégias que converteram · 5 reversões</div>
+  <div class="card" style="margin-bottom:36px;">
+    <div class="card-title">Detalhamento das conversas revertidas</div>
+    
+    <table>
+      <thead><tr><th>Atendente</th><th>Estratégia</th><th>Tipo Assinatura</th><th>Condição</th><th>Status</th></tr></thead>
+      <tbody>
+  <tr>
+    <td>Samla Souza</td>
+    <td class="motivo-text">Cancelamento Condicionado ( cancelou addon, manteve QD )</td>
+    <td class="motivo-text">Duo</td>
+    <td class="motivo-text">M1 - Garantia</td>
+    <td><span class="badge bg">Revertido</span></td>
+  </tr>
+  <tr>
+    <td>Samla Souza</td>
+    <td class="motivo-text">Link - Recorrente / Cronograma personalizado / +Q Nutri 30 dias / Oferta 15% desconto</td>
+    <td class="motivo-text">Anual</td>
+    <td class="motivo-text">M1 - Garantia</td>
+    <td><span class="badge bg">Revertido</span></td>
+  </tr>
+  <tr>
+    <td>Jessica Nunes Salomão</td>
+    <td class="motivo-text">Link - Recorrente</td>
+    <td class="motivo-text">GooglePlay</td>
+    <td class="motivo-text">M1 - Garantia</td>
+    <td><span class="badge bg">Revertido</span></td>
+  </tr>
+  <tr>
+    <td>Samla Souza</td>
+    <td class="motivo-text">Link - Recorrente / Cronograma personalizado</td>
+    <td class="motivo-text">Anual</td>
+    <td class="motivo-text">M1 - Garantia</td>
+    <td><span class="badge bg">Revertido</span></td>
+  </tr>
+  <tr>
+    <td>Jessica Nunes Salomão</td>
+    <td class="motivo-text">Link - Recorrente</td>
+    <td class="motivo-text">Anual</td>
+    <td class="motivo-text">M1 - Garantia</td>
+    <td><span class="badge bg">Revertido</span></td>
+  </tr></tbody>
+    </table>
+  </div>
+
+</div>
+
+
+<div class="tab-panel" id="panel-Jessica_Nunes_Salomo">
+  <div class="section-label">Visão geral · Jessica Nunes Salomão</div>
+  <div class="kpi-row kpi-5">
+    <div class="kpi-card"><div class="kpi-label">Total de conversas</div><div class="kpi-value">5</div></div>
+    <div class="kpi-card green"><div class="kpi-label">Revertidas</div><div class="kpi-value">2</div><div class="kpi-sub">40.0% de retenção</div></div>
+    <div class="kpi-card accent"><div class="kpi-label">Não revertidas</div><div class="kpi-value">1</div><div class="kpi-sub">20.0% do volume</div></div>
+    <div class="kpi-card amber"><div class="kpi-label">Direcionados</div><div class="kpi-value">1</div></div>
+    <div class="kpi-card blue"><div class="kpi-label">Outros (Apple/Duplicidade/etc.)</div><div class="kpi-value">1</div></div>
+  </div>
+
+  <div class="section-label">Distribuição e motivos</div>
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-title">Status de reversão</div>
+      <div class="chart-wrap"><canvas id="chartStatus_Jessica_Nunes_Salomo"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Condição de reversão</div>
+      <div class="chart-wrap-sm"><canvas id="chartCond_Jessica_Nunes_Salomo"></canvas></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Motivos de contato · Jessica</div>
+      
+      <div class="bar-row">
+        <div class="bar-label" title="*Atendimento no Zendesk">*Atendimento no Zendesk</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#885E00;"></div></div>
+        <div class="bar-count">1</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" title="Problemas de Saúde">Problemas de Saúde</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#C84B2F;"></div></div>
+        <div class="bar-count">1</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" title="Z- Outro ( marcar quando não tiver )">Z- Outro ( marcar quando não tiver )</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#9B59B6;"></div></div>
+        <div class="bar-count">1</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" title="Compra com Problema | Compra Sem Parcelamento (google ou apple )">Compra com Problema | Compra Sem Parce…</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#1A4E8C;"></div></div>
+        <div class="bar-count">1</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" title="Problemas Financeiros | Limite do Cartão">Problemas Financeiros | Limite do Cartão</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#2D6A4F;"></div></div>
+        <div class="bar-count">1</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Estratégias utilizadas · Jessica</div>
+      
+      <div class="bar-row">
+        <div class="bar-label" title="Link - Recorrente">Link - Recorrente</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#885E00;"></div></div>
+        <div class="bar-count">2</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" title="Extensão de acesso / Cronograma personalizado">Extensão de acesso / Cronograma person…</div>
+        <div class="bar-track"><div class="bar-fill" style="width:50%;background:#C84B2F;"></div></div>
+        <div class="bar-count">1</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Todas as conversas · Jessica Nunes Salomão</div>
+  <div class="table-card">
+    <div class="table-header"><div class="card-title" style="margin-bottom:0">5 conversas</div></div>
+    <table>
+      <thead><tr><th>Cliente</th><th>Data</th><th>Condição</th><th>Motivo</th><th>Estratégia</th><th>Full/Fallback</th><th>Status</th></tr></thead>
+      <tbody><tr>
+      <td>Juh~</td>
+      <td>06/03</td>
+      <td class="motivo-text">M1 - Garantia</td>
+      <td class="motivo-text">*Atendimento no Zendesk</td>
+      <td class="motivo-text">*Não se aplica</td>
+      <td class="motivo-text">Full</td>
+      <td><span class="badge ba">Direcionado</span></td>
+    </tr><tr>
+      <td>Rosilene</td>
+      <td>06/03</td>
+      <td class="motivo-text">M1 - Garantia</td>
+      <td class="motivo-text">Problemas de Saúde</td>
+      <td class="motivo-text">Extensão de acesso / Cronograma p…</td>
+      <td class="motivo-text">Full</td>
+      <td><span class="badge br">Não Revertido</span></td>
+    </tr><tr>
+      <td>Mazos Contábil</td>
+      <td>06/03</td>
+      <td class="motivo-text">Fora de Garantia</td>
+      <td class="motivo-text">Z- Outro ( marcar quando não tiver )</td>
+      <td class="motivo-text">*Não se aplica</td>
+      <td class="motivo-text">Full</td>
+      <td><span class="badge bpurp">Não se Aplica</span></td>
+    </tr><tr>
+      <td>Amanda Santos</td>
+      <td>06/03</td>
+      <td class="motivo-text">M1 - Garantia</td>
+      <td class="motivo-text">Compra com Problema | Compra Sem Parcelamen…</td>
+      <td class="motivo-text">Link - Recorrente</td>
+      <td class="motivo-text">Full</td>
+      <td><span class="badge bg">Revertido</span></td>
+    </tr><tr>
+      <td>Juliano</td>
+      <td>06/03</td>
+      <td class="motivo-text">M1 - Garantia</td>
+      <td class="motivo-text">Problemas Financeiros | Limite do Cartão</td>
+      <td class="motivo-text">Link - Recorrente</td>
+      <td class="motivo-text">Full</td>
+      <td><span class="badge bg">Revertido</span></td>
+    </tr></tbody>
+    </table>
+  </div>
+
+  <script>
+  new Chart(document.getElementById('chartStatus_Jessica_Nunes_Salomo'),{
+    type:'doughnut',
+    data:{labels:["Revertido","Direcionado","Não Revertido","Não se Aplica"],datasets:[{data:[2,1,1,1],backgroundColor:["#C84B2F","#885E00","#9B59B6","#EDEAE4"],borderWidth:3,borderColor:'#fff',hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+ctx.raw}}}}
+  });
+  new Chart(document.getElementById('chartCond_Jessica_Nunes_Salomo'),{
+    type:'bar',
+    data:{labels:["M1 - Garantia","Fora de Garantia"],datasets:[{data:[4,1],backgroundColor:['#885E00','#C84B2F','#EDEAE4','#1A4E8C','#2D6A4F','#1D9E75'],borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#9C9490'}},y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:11},color:'#9C9490'}}},plugins:{legend:{display:false}}}
+  });
+  </script>
+</div>
+
+<div class="tab-panel" id="panel-Samla_Souza">
+  <div class="section-label">Visão geral · Samla Souza</div>
+  <div class="kpi-row kpi-5">
+    <div class="kpi-card"><div class="kpi-label">Total de conversas</div><div class="kpi-value">8</div></div>
+    <div class="kpi-card green"><div class="kpi-label">Revertidas</div><div class="kpi-value">3</div><div class="kpi-sub">37.5% de retenção</div></div>
+    <div class="kpi-card accent"><div class="kpi-label">Não revertidas</div><div class="kpi-value">4</div><div class="kpi-sub">50.0% do volume</div></div>
+    <div class="kpi-card amber"><div class="kpi-label">Direcionados</div><div class="kpi-value">0</div></div>
+    <div class="kpi-card blue"><div class="kpi-label">Outros (Apple/Duplicidade/etc.)</div><div class="kpi-value">1</div></div>
+  </div>
+
+  <div class="section-label">Distribuição e motivos</div>
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-title">Status de reversão</div>
+      <div class="chart-wrap"><canvas id="chartStatus_Samla_Souza"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Condição de reversão</div>
+      <div class="chart-wrap-sm"><canvas id="chartCond_Samla_Souza"></canvas></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Motivos de contato · Samla</div>
+      
+      <div class="bar-row">
+        <div class="bar-label" title="Problemas Financeiros | Limite do Cartão / Cancelamento Addons | Compra Indevida">Problemas Financeiros | Limite do Cart…</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#885E00;"></div></div>
+        <div class="bar-count">2</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" title="Não se Adaptou">Não se Adaptou</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#C84B2F;"></div></div>
+        <div class="bar-count">2</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" title="Cancelamento Addons | Compra Indevida">Cancelamento Addons | Compra Indevida</div>
+        <div class="bar-track"><div class="bar-fill" style="width:50%;background:#9B59B6;"></div></div>
+        <div class="bar-count">1</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" title="Problemas Financeiros | Corte de Gastos">Problemas Financeiros | Corte de Gastos</div>
+        <div class="bar-track"><div class="bar-fill" style="width:50%;background:#1A4E8C;"></div></div>
+        <div class="bar-count">1</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" title="Motivos Pessoais ( não informou o motivo )">Motivos Pessoais ( não informou o moti…</div>
+        <div class="bar-track"><div class="bar-fill" style="width:50%;background:#2D6A4F;"></div></div>
+        <div class="bar-count">1</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" title="Inatividade">Inatividade</div>
+        <div class="bar-track"><div class="bar-fill" style="width:50%;background:#1D9E75;"></div></div>
+        <div class="bar-count">1</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Estratégias utilizadas · Samla</div>
+      
+      <div class="bar-row">
+        <div class="bar-label" title="Cancelamento Condicionado ( cancelou addon, manteve QD )">Cancelamento Condicionado ( cancelou a…</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#885E00;"></div></div>
+        <div class="bar-count">1</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" title="Link - Recorrente / Cronograma personalizado / +Q Nutri 30 dias / Oferta 15% desconto">Link - Recorrente / Cronograma persona…</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#C84B2F;"></div></div>
+        <div class="bar-count">1</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" title="Oferta 20% desconto / Link - Nova compra">Oferta 20% desconto / Link - Nova compra</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#9B59B6;"></div></div>
+        <div class="bar-count">1</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" title="Cronograma personalizado / Cancelamento Condicionado ( cancelou addon, manteve QD ) / Reembolso parcial ( reembolsa 1 parcela )">Cronograma personalizado / Cancelament…</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#1A4E8C;"></div></div>
+        <div class="bar-count">1</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" title="Cronograma personalizado / +Q Nutri 30 dias / Reembolso parcial ( reembolsa 1 parcela )">Cronograma personalizado / +Q Nutri 30…</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#2D6A4F;"></div></div>
+        <div class="bar-count">1</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" title="Link - Recorrente / Cronograma personalizado">Link - Recorrente / Cronograma persona…</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#1D9E75;"></div></div>
+        <div class="bar-count">1</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label" title="Inatividade">Inatividade</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#9C9490;"></div></div>
+        <div class="bar-count">1</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Todas as conversas · Samla Souza</div>
+  <div class="table-card">
+    <div class="table-header"><div class="card-title" style="margin-bottom:0">8 conversas</div></div>
+    <table>
+      <thead><tr><th>Cliente</th><th>Data</th><th>Condição</th><th>Motivo</th><th>Estratégia</th><th>Full/Fallback</th><th>Status</th></tr></thead>
+      <tbody><tr>
+      <td>Suenne Maria</td>
+      <td>06/03</td>
+      <td class="motivo-text">M1 - Garantia</td>
+      <td class="motivo-text">Cancelamento Addons | Compra Indevida</td>
+      <td class="motivo-text">Cancelamento Condicionado ( cance…</td>
+      <td class="motivo-text">Full / Fallback</td>
+      <td><span class="badge bg">Revertido</span></td>
+    </tr><tr>
+      <td>Andressa Azevedo</td>
+      <td>06/03</td>
+      <td class="motivo-text">M1 - Garantia</td>
+      <td class="motivo-text">Problemas Financeiros | Limite do Cartão / …</td>
+      <td class="motivo-text">Link - Recorrente / Cronograma pe…</td>
+      <td class="motivo-text">Full / Fallback</td>
+      <td><span class="badge bg">Revertido</span></td>
+    </tr><tr>
+      <td>Nicole Gonçalves</td>
+      <td>06/03</td>
+      <td class="motivo-text">M1 - Garantia</td>
+      <td class="motivo-text">Problemas Financeiros | Corte de Gastos</td>
+      <td class="motivo-text">Oferta 20% desconto / Link - Nova…</td>
+      <td class="motivo-text">Full</td>
+      <td><span class="badge br">Não Revertido</span></td>
+    </tr><tr>
+      <td>Mica</td>
+      <td>06/03</td>
+      <td class="motivo-text">M1 - Garantia</td>
+      <td class="motivo-text">Motivos Pessoais ( não informou o motivo )</td>
+      <td class="motivo-text">*Não se aplica</td>
+      <td class="motivo-text">Full</td>
+      <td><span class="badge br">Não Revertido</span></td>
+    </tr><tr>
+      <td>Willy</td>
+      <td>06/03</td>
+      <td class="motivo-text">M1 - Garantia</td>
+      <td class="motivo-text">Não se Adaptou</td>
+      <td class="motivo-text">Cronograma personalizado / Cancel…</td>
+      <td class="motivo-text">Full / Fallback</td>
+      <td><span class="badge br">Não Revertido</span></td>
+    </tr><tr>
+      <td>Sintia Ferreira</td>
+      <td>06/03</td>
+      <td class="motivo-text">M1 - Garantia</td>
+      <td class="motivo-text">Não se Adaptou</td>
+      <td class="motivo-text">Cronograma personalizado / +Q Nut…</td>
+      <td class="motivo-text">Fallback</td>
+      <td><span class="badge br">Não Revertido</span></td>
+    </tr><tr>
+      <td>554298523405</td>
+      <td>06/03</td>
+      <td class="motivo-text">M1 - Garantia</td>
+      <td class="motivo-text">Problemas Financeiros | Limite do Cartão / …</td>
+      <td class="motivo-text">Link - Recorrente / Cronograma pe…</td>
+      <td class="motivo-text">Full / Fallback</td>
+      <td><span class="badge bg">Revertido</span></td>
+    </tr><tr>
+      <td>Cindy Lopes</td>
+      <td>06/03</td>
+      <td class="motivo-text">Inatividade</td>
+      <td class="motivo-text">Inatividade</td>
+      <td class="motivo-text">Inatividade</td>
+      <td class="motivo-text">Inatividade</td>
+      <td><span class="badge bb">Inatividade</span></td>
+    </tr></tbody>
+    </table>
+  </div>
+
+  <script>
+  new Chart(document.getElementById('chartStatus_Samla_Souza'),{
+    type:'doughnut',
+    data:{labels:["Não Revertido","Revertido","Inatividade"],datasets:[{data:[4,3,1],backgroundColor:["#C84B2F","#885E00","#9B59B6"],borderWidth:3,borderColor:'#fff',hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+ctx.raw}}}}
+  });
+  new Chart(document.getElementById('chartCond_Samla_Souza'),{
+    type:'bar',
+    data:{labels:["M1 - Garantia","Inatividade"],datasets:[{data:[7,1],backgroundColor:['#885E00','#C84B2F','#EDEAE4','#1A4E8C','#2D6A4F','#1D9E75'],borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#9C9490'}},y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:11},color:'#9C9490'}}},plugins:{legend:{display:false}}}
+  });
+  </script>
+</div>
+
+</main>
+
+<footer>
+  Queima Diária · Dashboard de Retenção · 04/06/2026 · 13 conversas · Jessica Nunes Salomão (5) · Samla Souza (8)
+</footer>
+
+<script>
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+const accent='#C84B2F',green='#2D6A4F',amber='#885E00',blue='#1A4E8C',
+      teal='#1D9E75',purple='#9B59B6',muted='#9C9490',gray='#EDEAE4';
+
+new Chart(document.getElementById('chartCompare'),{
+  type:'bar',
+  data:{
+    labels:["Jessica Nunes Salomão","Samla Souza"],
+    datasets:[
+      {label:'Revertidas',data:[2,3],backgroundColor:green},
+      {label:'Não Revertidas',data:[1,4],backgroundColor:accent},
+      {label:'Direcionados',data:[1,0],backgroundColor:amber},
+      {label:'Não se Aplica',data:[1,0],backgroundColor:purple},
+      {label:'Inatividade',data:[0,1],backgroundColor:gray}
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:12,weight:'600'},color:'#1A1714'}},
+            y:{stacked:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:11},color:muted}}},
+    plugins:{legend:{position:'bottom',labels:{font:{size:11},color:muted,boxWidth:10}}}}
+});
+
+// Condição por atendente (agrupado)
+const condicoesTodas = [...new Set(["M1 - Garantia","M1 - Garantia","M1 - Garantia","M1 - Garantia","Fora de Garantia","M1 - Garantia","M1 - Garantia","M1 - Garantia","M1 - Garantia","M1 - Garantia","M1 - Garantia","M1 - Garantia","Inatividade"])];
+new Chart(document.getElementById('chartCondicao'),{
+  type:'bar',
+  data:{
+    labels:condicoesTodas,
+    datasets:[{"label":"Jessica","data":[],"backgroundColor":"#2D6A4F99"},{"label":"Samla","data":[],"backgroundColor":"#1A4E8C99"}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    scales:{x:{grid:{display:false},ticks:{font:{size:10},color:muted}},
+            y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:11},color:muted}}},
+    plugins:{legend:{position:'bottom',labels:{font:{size:11},color:muted,boxWidth:10}}}}
+});
+
+// Preencher dados condição por operador dinamicamente
+const dadosBrutos = [{"nome":"Samla Souza","condicao":"M1 - Garantia"},{"nome":"Jessica Nunes Salomão","condicao":"M1 - Garantia"},{"nome":"Jessica Nunes Salomão","condicao":"M1 - Garantia"},{"nome":"Samla Souza","condicao":"M1 - Garantia"},{"nome":"Jessica Nunes Salomão","condicao":"Fora de Garantia"},{"nome":"Jessica Nunes Salomão","condicao":"M1 - Garantia"},{"nome":"Samla Souza","condicao":"M1 - Garantia"},{"nome":"Samla Souza","condicao":"M1 - Garantia"},{"nome":"Samla Souza","condicao":"M1 - Garantia"},{"nome":"Samla Souza","condicao":"M1 - Garantia"},{"nome":"Samla Souza","condicao":"M1 - Garantia"},{"nome":"Jessica Nunes Salomão","condicao":"M1 - Garantia"},{"nome":"Samla Souza","condicao":"Inatividade"}];
+const chartCond = Chart.getChart('chartCondicao');
+condicoesTodas.forEach((cond, ci) => {
+  ["Jessica Nunes Salomão","Samla Souza"].forEach((op, oi) => {
+    const count = dadosBrutos.filter(d => d.nome === op && d.condicao === cond).length;
+    chartCond.data.datasets[oi].data[ci] = count;
+  });
+});
+chartCond.update();
+</script>
+</body>
+</html>
